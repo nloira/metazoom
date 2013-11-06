@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-pathtastictoolbox.py
+basic parsing and sotring of metabolic models in SBML.py
 
-Created by Nicolas Loira on 2010-12-18.
-Copyright (c) 2010 LaBRI, Univ.Bordeaux I, France. All rights reserved.
+Created by Nicolas Loira on 2013-11-06.
+nloira@gmail.com
 """
 
 import sys
@@ -15,8 +15,6 @@ from collections import defaultdict
 # Yes, a Global
 URI = None
 
-
-# import re
 
 def log(m):
 	print >>sys.stderr, m
@@ -32,7 +30,6 @@ class Species():
 		self.compartment = speciesElement.get("compartment", None)
 
 
-
 class Reaction():
 	def __init__(self, reactionElement, id2species):
 		global URI
@@ -45,7 +42,6 @@ class Reaction():
 
 		self.reactants = [ id2species[id] for id in reactantIDs ]
 		self.products = [ id2species[id] for id in productIDs ]
-
 
 
 class SBMLmodel():

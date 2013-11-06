@@ -11,4 +11,4 @@ model=pathtastictools.SBMLmodel("example.xml")
 
 for r in model.reactions:
 	for p in r.products:
-		print p.id
+		print p.compartment
