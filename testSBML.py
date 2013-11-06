@@ -9,4 +9,6 @@ import pathtastictools
 
 model=pathtastictools.SBMLmodel("example.xml")
 
-print model.reacNodes
+for r in model.reactions:
+	for p in r.products:
+		print p.id

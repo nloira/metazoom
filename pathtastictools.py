@@ -11,10 +11,41 @@ import sys
 import os
 from xml.etree.ElementTree import *
 from collections import defaultdict
+
+# Yes, a Global
+URI = None
+
+
 # import re
 
 def log(m):
 	print >>sys.stderr, m
+
+
+class Species():
+	def __init__(self, speciesElement):
+		global URI
+
+		self.element = speciesElement
+		self.id = speciesElement.get("id")
+		self.name = speciesElement.get("name", self.id)
+		self.compartment = speciesElement.get("compartment", None)
+
+
+
+class Reaction():
+	def __init__(self, reactionElement, id2species):
+		global URI
+
+		self.id = reactionElement.get("id")
+		self.name = reactionElement.get("name", None)
+
+		reactantIDs = [sr.get('species') for sr in reactionElement.findall("{%s}listOfReactants/{%s}speciesReference" % (URI, URI)) ]
+		productIDs = [sr.get('species') for sr in reactionElement.findall("{%s}listOfProducts/{%s}speciesReference" % (URI, URI)) ]
+
+		self.reactants = [ id2species[id] for id in reactantIDs ]
+		self.products = [ id2species[id] for id in productIDs ]
+
 
 
 class SBMLmodel():
@@ -27,6 +58,8 @@ class SBMLmodel():
 		self.lockedReactions=[]
 
 	def parseXML(self, modelFile):
+		global URI
+
 		assert modelFile
 		
 		if modelFile=="-":
@@ -41,20 +74,23 @@ class SBMLmodel():
 		self.root=root
 		self.URI,self.tag= root.tag[1:].split("}",1)
 		assert self.URI, "URI was not set correctly."
+		URI=self.URI
 
 		# shortcut for list of reaction nodes
 		self.reacNodes = root.findall("*/{%s}listOfReactions/{%s}reaction" % (self.URI,self.URI))
 		self.speciesNodes=root.findall("*/{%s}listOfSpecies/{%s}species" % (self.URI, self.URI))
 		self.compNodes=root.findall("*/{%s}listOfCompartments/{%s}compartment" % (self.URI, self.URI))
 
+		# build species and reaction  objects
+		self.species = [Species(sn) for sn in self.speciesNodes]
+		id2species = dict( [ (s.id, s) for s in self.species])
 
-		for r in self.reacNodes:
-			speciesInReaction=set()
-			speciesInReaction.update([sr.get('species') for sr in r.findall("{%s}listOfReactants/{%s}speciesReference" % (self.URI, self.URI))  ])
-			speciesInReaction.update([sr.get('species') for sr in r.findall("{%s}listOfProducts/{%s}speciesReference" % (self.URI, self.URI))  ])
-			speciesInReaction.update([sr.get('species') for sr in r.findall("{%s}listOfModifiers/{%s}modifierSpeciesReference" % (self.URI, self.URI))  ])
+		self.reactions=[Reaction(r, id2species) for r in self.reacNodes]
 
-		
+		# remember dictionaries
+		self.id2species = id2species
+
+
 		# map of all parents (useful for removing nodes)
 		self.parentMap = dict((c, p) for p in root.getiterator() for c in p)
 
