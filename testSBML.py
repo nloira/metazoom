@@ -3,12 +3,12 @@
 
 import sys,os
 
-import pathtastictools
+import basicSBML
 
 # MAIN
 
-model=pathtastictools.SBMLmodel("example.xml")
+model=basicSBML.SBMLmodel("example.xml")
 
 for r in model.reactions:
 	for p in r.products:
-		print p.compartment
+		print p.compartment.size

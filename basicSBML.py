@@ -19,15 +19,25 @@ URI = None
 def log(m):
 	print >>sys.stderr, m
 
+class Compartment():
+	def __init__(self, compartmentElement):
+		global URI
+
+		self.element = compartmentElement
+		self.id = compartmentElement.get("id")
+		self.name = compartmentElement.get("name", self.id)
+		self.size = int( compartmentElement.get("size", "1") )
+
 
 class Species():
-	def __init__(self, speciesElement):
+	def __init__(self, speciesElement, id2compartments):
 		global URI
 
 		self.element = speciesElement
 		self.id = speciesElement.get("id")
 		self.name = speciesElement.get("name", self.id)
-		self.compartment = speciesElement.get("compartment", None)
+		self.compartmentID = speciesElement.get("compartment", None)
+		self.compartment = id2compartments[self.compartmentID]
 
 
 class Reaction():
@@ -36,6 +46,7 @@ class Reaction():
 
 		self.id = reactionElement.get("id")
 		self.name = reactionElement.get("name", None)
+		self.reversible = bool(reactionElement.get("reversible","False"))
 
 		reactantIDs = [sr.get('species') for sr in reactionElement.findall("{%s}listOfReactants/{%s}speciesReference" % (URI, URI)) ]
 		productIDs = [sr.get('species') for sr in reactionElement.findall("{%s}listOfProducts/{%s}speciesReference" % (URI, URI)) ]
@@ -46,12 +57,9 @@ class Reaction():
 
 class SBMLmodel():
 	def __init__(self, filename=None):
-
 		if filename:
 			self.parseXML(filename)
 			
-		self.toRemove=None	
-		self.lockedReactions=[]
 
 	def parseXML(self, modelFile):
 		global URI
@@ -77,14 +85,22 @@ class SBMLmodel():
 		self.speciesNodes=root.findall("*/{%s}listOfSpecies/{%s}species" % (self.URI, self.URI))
 		self.compNodes=root.findall("*/{%s}listOfCompartments/{%s}compartment" % (self.URI, self.URI))
 
-		# build species and reaction  objects
-		self.species = [Species(sn) for sn in self.speciesNodes]
+
+		# build compartment, species and reaction objects
+
+		self.compartments = [Compartment(cn) for cn in self.compNodes]
+		id2compartments = dict( [ (c.id, c) for c in self.compartments])
+
+		self.species = [Species(sn, id2compartments) for sn in self.speciesNodes]
 		id2species = dict( [ (s.id, s) for s in self.species])
 
 		self.reactions=[Reaction(r, id2species) for r in self.reacNodes]
+		id2reactions = dict( [ (r.id, r) for r in self.reactions])
 
 		# remember dictionaries
+		self.id2compartments = id2compartments
 		self.id2species = id2species
+		self.id2reactions = id2reactions
 
 
 		# map of all parents (useful for removing nodes)
@@ -157,23 +173,6 @@ class SBMLmodel():
 		
 		return r2loci,r2formula
 		
-	def getGAGroup(self, excludeLocked=False):
-		"""generate a GAGroup object with the existing GeneAssociations"""
-		r2loci,r2formula = self.getGeneAssociations()
-		
-		ridWithFormula=r2formula.keys()
-		reactionsWithFormula = [r for r in self.reacNodes if r.get('id') in ridWithFormula]
-		
-		if excludeLocked:
-			reactionsWithFormula = [r for r in reactionsWithFormula if r not in self.lockedReactions]
-		
-		GAs=GAGroup()
-		for reac in reactionsWithFormula:
-			ga=GeneAssociation(reac, self)
-			GAs.add(ga)
-			
-		return GAs
-			
 
 
 class GeneAssociation():
