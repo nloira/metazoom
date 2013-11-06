@@ -63,7 +63,7 @@ def main():
 	print "Shutting down metazoom..."
 
 
-#####################
+###############################################################
 
 def mainTUI(*args, **kwds):
 	# just wait for a while
@@ -73,16 +73,32 @@ def mainTUI(*args, **kwds):
 	# setup curses
 	curses.init_pair(1, curses.COLOR_RED, curses.COLOR_WHITE)
 	curses.curs_set(0) # invisible cursor
+
 	(my,mx) = mainw.getmaxyx()
+	mainw.nodelay(0) # wait for user input
 
 	# some feedback
 	mainw.addstr(5,2, str(len(model.reactions)), curses.color_pair(1))
-	mainw.refresh()
+	
+	# Main loop
 
-	time.sleep(3)
+	while True:
+		# get command
+		key=mainw.getch()
+		keyname=curses.keyname(key)
+
+		# prepare new screen
+		mainw.erase()
+
+		# execute command
+		mainw.addstr(5,2, keyname)
+
+		# update screen
+		mainw.noutrefresh()
+		curses.doupdate()
 
 
-
+###############################################################
 
 if __name__ == "__main__":
     main()
