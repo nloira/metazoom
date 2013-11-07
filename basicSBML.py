@@ -56,6 +56,10 @@ class Reaction():
 
 
 class SBMLmodel():
+
+	consumers=dict()
+	producers=dict()
+
 	def __init__(self, filename=None):
 		if filename:
 			self.parseXML(filename)
@@ -76,6 +80,7 @@ class SBMLmodel():
 		root=result.getroot()
 		self.xmlTree=result
 		self.root=root
+		assert root.tag.startswith('{'), "No xmlsn found on sbml tag"
 		self.URI,self.tag= root.tag[1:].split("}",1)
 		assert self.URI, "URI was not set correctly."
 		URI=self.URI
@@ -172,7 +177,26 @@ class SBMLmodel():
 		self.rid2node=rid2node
 		
 		return r2loci,r2formula
-		
+
+	#################################
+	# look for elements
+
+	def reactionsThatConsume(self, speciesElement):
+		if speciesElement in self.consumers:
+			return self.consumers[speciesElement]
+		else:
+			consumers = [r for r in self.reactions if speciesElement in r.reactants]
+			self.consumers[speciesElement]=consumers
+		return consumers
+
+	def reactionsThatProduce(self, speciesElement):
+		if speciesElement in self.producers:
+			return self.producers[speciesElement]
+		else:
+			producers = [r for r in self.reactions if speciesElement in r.products]
+			self.producers[speciesElement]=producers
+		return producers
+
 
 
 class GeneAssociation():

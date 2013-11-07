@@ -84,8 +84,14 @@ def mainTUI(*args, **kwds):
 	while True:
 		# get command
 		key=mainw.getch()
-		keyname=curses.keyname(key)
 
+		try:
+			keyname=curses.keyname(key)
+		except Exception, e:
+			pass
+			# keyname="LOG: invalid key:"+str(key) 
+		
+		
 		# prepare new screen
 		mainw.erase()
 
@@ -114,9 +120,17 @@ class MZlayout():
 		self.focusOn = None
 		self.distance = 1
 		self.statusBar = ""
+		self.log = None
 
 	def command(self, keyname):
-		self.centerOnAnyReaction()
+
+		if keyname.startswith("LOG:"):
+			self.log=keyname[4:]
+		elif keyname=="KEY_RESIZE":
+			# recalculate window size
+			(self.my,self.mx) = self.mainw.getmaxyx()
+		else:
+			self.centerOnAnyReaction()
 
 	def centerOnAnyReaction(self):
 		assert len(self.model.reactions)>0
@@ -142,15 +156,92 @@ class MZlayout():
 
 	def redraw(self):
 
-		if self.cmode==MZlayout.REACTION:
-			label = "["+self.centerOn.id+"]"
-		elif self.cmode==MZlayout.SPECIES:
-			label = "("+self.centerOn.id+")"
+
+		# what is the message?
+		if self.log:
+			label=self.log
+			self.log=None
+		elif self.cmode in (MZlayout.REACTION, MZlayout.SPECIES):
+			label = self.decorate(self.centerOn.id, self.cmode)
 		else:
 			assert False, "WRONG CENTER MODEL"
 
 		# display label on center of screen
 		self.printAtCenter(label)
+
+		# get neighbors at distance 1
+		if self.cmode in (MZlayout.REACTION, MZlayout.SPECIES):
+			# lists of neigbors
+			leftNeighbors = self.getLeftOf(self.centerOn)
+			rightNeighbors = self.getRightOf(self.centerOn)
+
+			# type of neigbors
+			ntype = MZlayout.REACTION if self.cmode==MZlayout.SPECIES else MZlayout.SPECIES
+
+			# where do we put them?
+			## let's leave some space before and after the center label
+			lenlabel=len(label)
+
+
+			# right side is easy (left aligned)
+			if len(rightNeighbors)>0:
+				rinix = (self.mx+lenlabel)/2 + 4
+				riniy = (self.my-len(rightNeighbors))/2
+
+				for rn in rightNeighbors:
+					rlabel=self.decorate(rn.id, ntype)
+					self.mainw.addstr(riniy,rinix,rlabel)
+					riniy+=1
+
+			# left side is trickier (left aligned, with enough space for all of them)
+			if len(leftNeighbors)>0:
+				liniy = (self.my-len(leftNeighbors))/2
+
+				lnLabels=[self.decorate(ln.id, ntype) for ln in leftNeighbors]
+				maxleftlen = max(map(len, lnLabels))
+				linix = (self.mx-lenlabel)/2 -4 -maxleftlen
+
+				for lnLabel in lnLabels:
+					self.mainw.addstr(liniy,linix,lnLabel)
+					liniy+=1
+
+
+		# where do we list them?
+
+	def decorate(self, label, cmode):
+		if cmode==MZlayout.REACTION:
+			dlabel = "["+label+"]"
+		elif cmode==MZlayout.SPECIES:
+			dlabel = "("+label+")"
+		else:
+			assert False, "WRONG CENTER MODEL"
+		return dlabel
+
+	def getRightOf(self, element):
+
+		className=element.__class__.__name__
+		if className=="Reaction":
+			neighbors = element.products
+		elif className=="Species":
+			neighbors = self.model.reactionsThatConsume(element)
+		else:
+			assert False, "Trying to find neighbors for class %s" % (className)
+
+		return neighbors
+
+	def getLeftOf(self, element):
+
+		className=element.__class__.__name__
+		if className=="Reaction":
+			neighbors = element.reactants
+		elif className=="Species":
+			neighbors = self.model.reactionsThatProduce(element)
+		else:
+			assert False, "Trying to find neighbors for class %s" % (className)
+
+		return neighbors
+
+
 
 
 
