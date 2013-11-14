@@ -110,6 +110,8 @@ class MZlayout():
 	REACTION = 1
 	SPECIES = 2
 
+	MORE = "~"
+
 	def __init__(self, mainw, model):
 		self.model=model
 		self.mainw=mainw
@@ -130,7 +132,7 @@ class MZlayout():
 			# recalculate window size
 			(self.my,self.mx) = self.mainw.getmaxyx()
 		else:
-			self.centerOnAnyReaction()
+			self.centerOnAnySpecies()
 
 	def centerOnAnyReaction(self):
 		assert len(self.model.reactions)>0
@@ -201,12 +203,22 @@ class MZlayout():
 				maxleftlen = max(map(len, lnLabels))
 				linix = (self.mx-lenlabel)/2 -4 -maxleftlen
 
+				assert liniy>0, "Y for Left is "+str(liniy)
 				for lnLabel in lnLabels:
 					self.mainw.addstr(liniy,linix,lnLabel)
 					liniy+=1
 
 
 		# where do we list them?
+
+
+	def fitTolength(self, label, maxLen):
+		llabel = len(label)
+		if llabel>maxLen:
+			return label[:maxLen-1]+self.MORE
+		else:
+			return label
+
 
 	def decorate(self, label, cmode):
 		if cmode==MZlayout.REACTION:
