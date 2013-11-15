@@ -27,6 +27,7 @@ class Compartment():
 		self.id = compartmentElement.get("id")
 		self.name = compartmentElement.get("name", self.id)
 		self.size = int( compartmentElement.get("size", "1") )
+		self.type = "compartment"
 
 
 class Species():
@@ -38,6 +39,7 @@ class Species():
 		self.name = speciesElement.get("name", self.id)
 		self.compartmentID = speciesElement.get("compartment", None)
 		self.compartment = id2compartments[self.compartmentID]
+		self.type = "species"
 
 
 class Reaction():
@@ -53,6 +55,7 @@ class Reaction():
 
 		self.reactants = [ id2species[id] for id in reactantIDs ]
 		self.products = [ id2species[id] for id in productIDs ]
+		self.type = "reaction"
 
 
 class SBMLmodel():
@@ -63,6 +66,7 @@ class SBMLmodel():
 	def __init__(self, filename=None):
 		if filename:
 			self.parseXML(filename)
+		self.type="model"
 			
 
 	def parseXML(self, modelFile):

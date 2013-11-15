@@ -211,7 +211,6 @@ class MZlayout():
 
 		# where do we list them?
 
-
 	def fitTolength(self, label, maxLen):
 		llabel = len(label)
 		if llabel>maxLen:
@@ -253,8 +252,86 @@ class MZlayout():
 
 		return neighbors
 
+### New layout per columns
+	def fiveColumnsLayout(self):
 
 
+
+		# we'll find the neighbors at distance 2 of the centerOn element
+		# and distribute them on five columns, like this:
+		# | L2 | L1 | C0 | R1 | R2 |
+		# but we'll use the names:
+		# | 0 | 1 | 2 | 3 | 4 |
+
+
+		(L2,L1,C0,R1,R2)=(0,1,2,3,4)
+
+		# we'll use the class Textbox to represent the actual elements on screen
+
+		### COMMON
+		self.textboxes = []
+
+		self.interColumnSpace = 5
+		self.colw = (self.maxx - 20)/5
+		self.colh = self.maxy - 1 # left a line for status
+		self.colvc = self.colh/2
+
+		# column starting position
+		colX[0] = 0
+		for i in range(4):
+			colX[i+1] = colX[i] + self.colw + self.interColumnSpace
+
+		### C0
+		# create a textbox for the central element (self.centerOn)
+		tbC0 = Textbox(self.centerOn, colX[C0], colvc)
+		self.textboxes.append(tbC0)
+
+		# that's it for now
+
+		# remember stuff
+		self.colX=colX
+
+
+
+	def render(self):
+
+		maxw = self.colw
+		for tb in self.textboxes:
+			tb.render(maxw)
+
+
+
+
+
+class Textbox():
+
+	DECORATORS={ "reaction":"[]", "species":"()", "others":"<>" }
+	MORE="~"
+
+	def __init__(self, element,x=0,y=0, align="l"):
+		# align \in (l,c,r)
+		self.element=element
+		self.x=x
+		self.y=y
+		self.label=element.id
+		self.llabel=len(label) if label!=None else 0
+		self.align = align
+		self.decorator=Textbox.DECORATORS.get(element.type, Textbox.DECORATORS["others"])
+
+	def render(self, maxw):
+
+		label=self.label
+		if (self.llabel+2)>maxw:
+			label=label[:maxw-3]+Textbox.MORE
+
+		label = self.decorator[0]+label+self.decorator[1]
+
+		x=self.x
+		llabel = len(label)
+
+		# move if it does not use all the available column space
+		if len(label)<maxw:
+			if self.align=="l": x=self.x
 
 
 
