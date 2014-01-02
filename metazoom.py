@@ -137,7 +137,7 @@ class MZlayout():
 
 	def command(self, keyname):
 
-		self.log="presionado: "+keyname
+		# self.log="presionado: "+keyname
 
 		if keyname.startswith("LOG:"):
 			self.log=keyname[4:]
@@ -270,7 +270,7 @@ class MZlayout():
 				l1tol2[n1]=l2neighbors
 
 			# compute layout parameters for L1 and L2
-			if totL2>self.colh:
+			if (totL2+lenl1)>self.colh:
 				# get only some of them
 				maxL2toDisplay=self.colh/lenl1
 				l2vspace = 1
@@ -318,7 +318,7 @@ class MZlayout():
 					r1tor2[n1]=r2neighbors
 
 				# compute layout parameters for L1 and L2
-				if totR2>self.colh:
+				if (totR2+lenr1)>self.colh:
 					# get only some of them
 					maxR2toDisplay=self.colh/lenr1
 					r2vspace = 1
@@ -366,6 +366,7 @@ class MZlayout():
 
 		# render log line
 		self.mainw.addstr(self.my-1,0,self.log)
+		# self.log=""
 
 
 class Textbox():
@@ -413,7 +414,12 @@ class Textbox():
 
 		self.dx=dx
 
-		mzlayout.mainw.addstr(self.y,self.x+dx,label)
+		try:
+			mzlayout.mainw.addstr(self.y,self.x+dx,label)
+		except Exception, e:
+			mzlayout.log="Error al intentar imprimir %s en %d,%d" % (label, self.y, self.x+dx)
+
+		
 
 
 
