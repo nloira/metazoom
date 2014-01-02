@@ -137,7 +137,7 @@ class MZlayout():
 			# recalculate window size
 			(self.my,self.mx) = self.mainw.getmaxyx()
 		else:
-			self.centerOnAnySpecies()
+			self.centerOnAnyReaction()
 
 		# let's re-calculate the screen
 		self.fiveColumnsLayout()
@@ -313,7 +313,7 @@ class MZlayout():
 			if totL2>self.colh:
 				# get only some of them
 				maxL2toDisplay=self.colh/lenl1
-				l2vspace = 0
+				l2vspace = 1
 				l2start = 0
 			else:
 				maxL2toDisplay=self.colh*1000  # infinite
@@ -337,6 +337,56 @@ class MZlayout():
 				# textbox for L1
 				tbL1 = Textbox(n1, colX[L1], int(l1pos))
 				self.textboxes.append(tbL1)
+
+
+			### Right side
+			# create textboxes for right-of-the-center elements
+			r1neighbors=self.getRightOf(self.centerOn)
+			lenr1 = len(r1neighbors)
+			if lenr1 >0:
+				# check that number of neighbors fit in the screen
+				if lenr1>self.colh:
+					r1neighbors=r1neighbors[0:self.colh]
+					lenr1=self.colh
+
+				# get L2 elements for each L1 element
+				totR2=0
+				r1tor2=dict()
+				for n1 in r1neighbors:
+					r2neighbors=self.getRightOf(n1)
+					totR2+=len(r2neighbors)
+					r1tor2[n1]=r2neighbors
+
+				# compute layout parameters for L1 and L2
+				if totR2>self.colh:
+					# get only some of them
+					maxR2toDisplay=self.colh/lenr1
+					r2vspace = 1
+					r2start = 0
+				else:
+					maxR2toDisplay=self.colh*1000  # infinite
+					r2vspace = 1
+					r2start = (self.colh - (totR2 + r2vspace*(lenr1-1)))/2
+
+				# create textboxes for L2 and L1
+				r2pos = r2start
+
+				for n1 in r1neighbors:
+					r1pos = r2pos
+
+					# textboxes for L2
+					for n2 in r1tor2[n1][0:maxR2toDisplay]:
+						tbR2 = Textbox(n2, colX[R2], r2pos)
+						self.textboxes.append(tbR2)
+						r2pos+=1
+						r1pos+=0.5
+					r2pos+=r2vspace
+
+					# textbox for L1
+					tbR1 = Textbox(n1, colX[R1], int(r1pos))
+					self.textboxes.append(tbR1)
+
+
 
 
 		# that's it for now
