@@ -137,7 +137,7 @@ class MZlayout():
 			# recalculate window size
 			(self.my,self.mx) = self.mainw.getmaxyx()
 		else:
-			self.centerOnAnySpecies()
+			self.centerOnAnyReaction()
 
 		# let's re-calculate the screen
 		self.fiveColumnsLayout()
@@ -280,7 +280,7 @@ class MZlayout():
 		self.textboxes = []
 
 		self.interColumnSpace = 5
-		self.colw = (self.mx - 20)/5
+		self.colw = (self.mx - (4*self.interColumnSpace))/5
 		self.colh = self.my - 1 # left a line for status
 		self.colvc = self.colh/2
 
@@ -306,7 +306,7 @@ class MZlayout():
 
 		maxw = self.colw
 		for tb in self.textboxes:
-			tb.render(maxw,self)
+			tb.render(self)
 
 
 
@@ -325,27 +325,31 @@ class Textbox():
 		self.align = align
 		self.decorator=Textbox.DECORATORS.get(element.type, Textbox.DECORATORS["others"])
 
-	def render(self, maxw, mzlayout):
+	def render(self, mzlayout):
+
+		maxw=mzlayout.colw
 
 		label=self.label
 		if (self.llabel+2)>maxw:
 			label=label[:maxw-3]+Textbox.MORE
 
-		label = self.decorator[0]+label+self.decorator[1]
+		label = self.decorator[0:1]+label+self.decorator[1:2]
 
 		x=self.x
 		llabel = len(label)
 
 		# move if it does not use all the available column space
 		if llabel<maxw:
-			if self.align=="l": dx=self.x
-			elif self.align=="r": dx=self.x+(maxw-llabel)
-			elif self.align=="c": dx=self.x+(maxw-llabel)/2
+			if self.align=="l": dx=0
+			elif self.align=="r": dx=(maxw-llabel)
+			elif self.align=="c": dx=(maxw-llabel)/2
 		else:
-			dx=self.x
+			dx=0
 
 		self.dx=dx
 
+		# dx=0
+		# label=self.label
 		# paint
 		mzlayout.mainw.addstr(self.y,self.x+dx,label)
 
