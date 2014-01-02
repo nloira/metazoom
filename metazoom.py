@@ -137,7 +137,7 @@ class MZlayout():
 			# recalculate window size
 			(self.my,self.mx) = self.mainw.getmaxyx()
 		else:
-			self.centerOnAnyReaction()
+			self.centerOnAnySpecies()
 
 		# let's re-calculate the screen
 		self.fiveColumnsLayout()
@@ -263,15 +263,11 @@ class MZlayout():
 ### New layout per columns
 	def fiveColumnsLayout(self):
 
-
-
 		# we'll find the neighbors at distance 2 of the centerOn element
 		# and distribute them on five columns, like this:
 		# | L2 | L1 | C0 | R1 | R2 |
 		# but we'll use the names:
 		# | 0 | 1 | 2 | 3 | 4 |
-
-
 		(L2,L1,C0,R1,R2)=(0,1,2,3,4)
 
 		# we'll use the class Textbox to represent the actual elements on screen
@@ -294,6 +290,54 @@ class MZlayout():
 		# create a textbox for the central element (self.centerOn)
 		tbC0 = Textbox(self.centerOn, colX[C0], self.colvc)
 		self.textboxes.append(tbC0)
+
+		### Left side
+		# create textboxes for left-of-the-center elements
+		l1neighbors=self.getLeftOf(self.centerOn)
+		lenl1 = len(l1neighbors)
+		if lenl1 >0:
+			# check that number of neighbors fit in the screen
+			if lenl1>self.colh:
+				l1neighbors=l1neighbors[0:self.colh]
+				lenl1=self.colh
+
+			# get L2 elements for each L1 element
+			totL2=0
+			l1tol2=dict()
+			for n1 in l1neighbors:
+				l2neighbors=self.getLeftOf(n1)
+				totL2+=len(l2neighbors)
+				l1tol2[n1]=l2neighbors
+
+			# compute layout parameters for L1 and L2
+			if totL2>self.colh:
+				# get only some of them
+				maxL2toDisplay=self.colh/lenl1
+				l2vspace = 0
+				l2start = 0
+			else:
+				maxL2toDisplay=self.colh*1000  # infinite
+				l2vspace = 1
+				l2start = (self.colh - (totL2 + l2vspace*(lenl1-1)))/2
+
+			# create textboxes for L2 and L1
+			l2pos = l2start
+
+			for n1 in l1neighbors:
+				l1pos = l2pos
+
+				# textboxes for L2
+				for n2 in l1tol2[n1][0:maxL2toDisplay]:
+					tbL2 = Textbox(n2, colX[L2], l2pos)
+					self.textboxes.append(tbL2)
+					l2pos+=1
+					l1pos+=0.5
+				l2pos+=l2vspace
+
+				# textbox for L1
+				tbL1 = Textbox(n1, colX[L1], int(l1pos))
+				self.textboxes.append(tbL1)
+
 
 		# that's it for now
 
