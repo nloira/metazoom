@@ -16,6 +16,8 @@ import random
 
 import basicSBML
 
+def log(msg):
+	print >>sys.stderr, msg
 
 
 def usage():
@@ -80,6 +82,10 @@ def mainTUI(*args, **kwds):
 	mz = MZlayout(mainw, model)
 	mz.printAtCenter("Welcome to MetaZoom")
 
+	# layout screen for the first time
+	mz.centerOnAnyReaction()
+	mz.fiveColumnsLayout()
+
 	# Main loop
 	while True:
 		# get command
@@ -95,9 +101,7 @@ def mainTUI(*args, **kwds):
 		# prepare new screen
 		mainw.erase()
 
-		# layout screen for the first time
-		mz.centerOnAnyReaction()
-		mz.fiveColumnsLayout()
+
 
 		# execute command
 		mz.command(keyname)
@@ -114,8 +118,8 @@ def mainTUI(*args, **kwds):
 class MZlayout():
 	REACTION = 1
 	SPECIES = 2
-
 	MORE = "~"
+	ALTERNATELABEL = { 'id':'name', 'name':'id'}
 
 	def __init__(self, mainw, model):
 		self.model=model
@@ -128,19 +132,29 @@ class MZlayout():
 		self.distance = 1
 		self.statusBar = ""
 		self.log = None
+		self.labelMode = "id"
+		self.log=""
 
 	def command(self, keyname):
+
+		self.log="presionado: "+keyname
 
 		if keyname.startswith("LOG:"):
 			self.log=keyname[4:]
 		elif keyname=="KEY_RESIZE":
 			# recalculate window size
 			(self.my,self.mx) = self.mainw.getmaxyx()
-		else:
+			self.fiveColumnsLayout()
+		elif keyname=="n":
+			self.labelMode = self.ALTERNATELABEL[self.labelMode]
+			for tb in self.textboxes:
+				tb.setLabelMode(self.labelMode)
+		elif keyname=="r":
 			self.centerOnAnyReaction()
-
-		# let's re-calculate the screen
-		self.fiveColumnsLayout()
+			self.fiveColumnsLayout()
+		elif keyname=="s":
+			self.centerOnAnySpecies()
+			self.fiveColumnsLayout()
 
 	def centerOnAnyReaction(self):
 		assert len(self.model.reactions)>0
@@ -164,60 +178,6 @@ class MZlayout():
 
 		self.mainw.addstr(y,x,label)
 
-	def redraw(self):
-
-
-		# what is the message?
-		if self.log:
-			label=self.log
-			self.log=None
-		elif self.cmode in (MZlayout.REACTION, MZlayout.SPECIES):
-			label = self.decorate(self.centerOn.id, self.cmode)
-		else:
-			assert False, "WRONG CENTER MODEL"
-
-		# display label on center of screen
-		self.printAtCenter(label)
-
-		# get neighbors at distance 1
-		if self.cmode in (MZlayout.REACTION, MZlayout.SPECIES):
-			# lists of neigbors
-			leftNeighbors = self.getLeftOf(self.centerOn)
-			rightNeighbors = self.getRightOf(self.centerOn)
-
-			# type of neigbors
-			ntype = MZlayout.REACTION if self.cmode==MZlayout.SPECIES else MZlayout.SPECIES
-
-			# where do we put them?
-			## let's leave some space before and after the center label
-			lenlabel=len(label)
-
-
-			# right side is easy (left aligned)
-			if len(rightNeighbors)>0:
-				rinix = (self.mx+lenlabel)/2 + 4
-				riniy = (self.my-len(rightNeighbors))/2
-
-				for rn in rightNeighbors:
-					rlabel=self.decorate(rn.id, ntype)
-					self.mainw.addstr(riniy,rinix,rlabel)
-					riniy+=1
-
-			# left side is trickier (left aligned, with enough space for all of them)
-			if len(leftNeighbors)>0:
-				liniy = (self.my-len(leftNeighbors))/2
-
-				lnLabels=[self.decorate(ln.id, ntype) for ln in leftNeighbors]
-				maxleftlen = max(map(len, lnLabels))
-				linix = (self.mx-lenlabel)/2 -4 -maxleftlen
-
-				assert liniy>0, "Y for Left is "+str(liniy)
-				for lnLabel in lnLabels:
-					self.mainw.addstr(liniy,linix,lnLabel)
-					liniy+=1
-
-
-		# where do we list them?
 
 	def fitTolength(self, label, maxLen):
 		llabel = len(label)
@@ -389,7 +349,9 @@ class MZlayout():
 
 
 
-		# that's it for now
+		# tell our textboxes about our labelMode
+		for tb in self.textboxes:
+			tb.setLabelMode(self.labelMode)
 
 		# remember stuff
 		self.colX=colX
@@ -398,10 +360,12 @@ class MZlayout():
 
 	def render(self):
 
-		maxw = self.colw
+		# render textboxes
 		for tb in self.textboxes:
 			tb.render(self)
 
+		# render log line
+		self.mainw.addstr(self.my-1,0,self.log)
 
 
 class Textbox():
@@ -418,6 +382,13 @@ class Textbox():
 		self.llabel=len(self.label) if self.label!=None else 0
 		self.align = align
 		self.decorator=Textbox.DECORATORS.get(element.type, Textbox.DECORATORS["others"])
+
+	def setLabelMode(self, labelMode):
+		if labelMode=="name" and self.element.name != None:
+			self.label=self.element.name
+		else:
+			self.label=self.element.id
+		self.llabel=len(self.label) if self.label!=None else 0
 
 	def render(self, mzlayout):
 
@@ -442,10 +413,9 @@ class Textbox():
 
 		self.dx=dx
 
-		# dx=0
-		# label=self.label
-		# paint
 		mzlayout.mainw.addstr(self.y,self.x+dx,label)
+
+
 
 
 ###############################################################
