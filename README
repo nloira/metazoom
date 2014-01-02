@@ -5,3 +5,5 @@ Nicolas Loira
 nloira@gmail.com
 2013
 
+python metazoom.py ~/projects/pathtastic/data/models/ecoli/ecoli_1.0_model.xml 
+

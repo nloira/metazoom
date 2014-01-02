@@ -12,3 +12,4 @@ model=basicSBML.SBMLmodel("example.xml")
 for r in model.reactions:
 	for p in r.products:
 		print p.compartment.size
+

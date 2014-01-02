@@ -95,11 +95,16 @@ def mainTUI(*args, **kwds):
 		# prepare new screen
 		mainw.erase()
 
+		# layout screen for the first time
+		mz.centerOnAnyReaction()
+		mz.fiveColumnsLayout()
+
 		# execute command
 		mz.command(keyname)
 
 		# update screen
-		mz.redraw()
+		# mz.redraw()
+		mz.render()
 		mainw.noutrefresh()
 		curses.doupdate()
 
@@ -133,6 +138,9 @@ class MZlayout():
 			(self.my,self.mx) = self.mainw.getmaxyx()
 		else:
 			self.centerOnAnySpecies()
+
+		# let's re-calculate the screen
+		self.fiveColumnsLayout()
 
 	def centerOnAnyReaction(self):
 		assert len(self.model.reactions)>0
@@ -272,18 +280,19 @@ class MZlayout():
 		self.textboxes = []
 
 		self.interColumnSpace = 5
-		self.colw = (self.maxx - 20)/5
-		self.colh = self.maxy - 1 # left a line for status
+		self.colw = (self.mx - 20)/5
+		self.colh = self.my - 1 # left a line for status
 		self.colvc = self.colh/2
 
 		# column starting position
-		colX[0] = 0
+		colX = [0]*5
+		# colX[0] = 0
 		for i in range(4):
 			colX[i+1] = colX[i] + self.colw + self.interColumnSpace
 
 		### C0
 		# create a textbox for the central element (self.centerOn)
-		tbC0 = Textbox(self.centerOn, colX[C0], colvc)
+		tbC0 = Textbox(self.centerOn, colX[C0], self.colvc)
 		self.textboxes.append(tbC0)
 
 		# that's it for now
@@ -297,9 +306,7 @@ class MZlayout():
 
 		maxw = self.colw
 		for tb in self.textboxes:
-			tb.render(maxw)
-
-
+			tb.render(maxw,self)
 
 
 
@@ -314,11 +321,11 @@ class Textbox():
 		self.x=x
 		self.y=y
 		self.label=element.id
-		self.llabel=len(label) if label!=None else 0
+		self.llabel=len(self.label) if self.label!=None else 0
 		self.align = align
 		self.decorator=Textbox.DECORATORS.get(element.type, Textbox.DECORATORS["others"])
 
-	def render(self, maxw):
+	def render(self, maxw, mzlayout):
 
 		label=self.label
 		if (self.llabel+2)>maxw:
@@ -330,9 +337,17 @@ class Textbox():
 		llabel = len(label)
 
 		# move if it does not use all the available column space
-		if len(label)<maxw:
-			if self.align=="l": x=self.x
+		if llabel<maxw:
+			if self.align=="l": dx=self.x
+			elif self.align=="r": dx=self.x+(maxw-llabel)
+			elif self.align=="c": dx=self.x+(maxw-llabel)/2
+		else:
+			dx=self.x
 
+		self.dx=dx
+
+		# paint
+		mzlayout.mainw.addstr(self.y,self.x+dx,label)
 
 
 ###############################################################
